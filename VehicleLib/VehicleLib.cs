@@ -9,16 +9,20 @@ namespace VehicleLib
 
         public float speed { get; set; }
 
+        private int _fuelCapacity;
         public int fuelCapacity
         {
-            get { return fuelCapacity; }
-            set { FuelCut(value); }
+            get { return _fuelCapacity; }
+            set { _fuelCapacity = FuelCut(value); }
         }
+
         public abstract float avgFuelConsump { get; set; }
+
+        private float _currentFuel;
         public float currentFuel
         {
-            get { return currentFuel; }
-            set { Math.Clamp(value, 0, fuelCapacity); }
+            get { return _currentFuel; }
+            set { _currentFuel = Math.Clamp(value, 0, fuelCapacity); }
         }
         
         public enum Time
@@ -78,23 +82,26 @@ namespace VehicleLib
 
     public class PassangerCar : Vehicle
     {
-        
+        private float _avgFuelConsump;
         public override float avgFuelConsump
         {
-            // Геттер возвращает уже подверженное "штрафу" от кол-ва пассажиров значение.
+            // Геттер возвращает уже подверженное "штрафу" от кол-ва пассажиров значение
             get { return AffectedFuelConsump(); }
-            set { avgFuelConsump = value; }
+            set { _avgFuelConsump = value; }
         }
 
+        private int _passangerCapacity;
         public int passangerCapacity
         {
-            get { return passangerCapacity; }
-            set { PassangersCut(value); }
+            get { return _passangerCapacity; }
+            set { _passangerCapacity = PassangersCut(value); }
         }
+
+        private int _currentPasangers;
         public int currentPasangers
         {
-            get { return currentPasangers; }
-            set { Math.Clamp(value, 0, passangerCapacity); }
+            get { return _currentPasangers; }
+            set { _currentPasangers = Math.Clamp(value, 0, _passangerCapacity); }
         }
 
         public PassangerCar(int fuelCapacity, float avgFuelConsump, int passangerCapacity) : base(fuelCapacity, avgFuelConsump)
@@ -117,7 +124,7 @@ namespace VehicleLib
         private float AffectedFuelConsump()
         {
             float percentage = 1 + (currentPasangers * 0.06f);
-            return avgFuelConsump * percentage;
+            return _avgFuelConsump * percentage;
         }
     }
 }
