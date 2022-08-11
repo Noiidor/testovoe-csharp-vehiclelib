@@ -2,21 +2,27 @@
 
 namespace VehicleLib
 {
-    
+    // Задание реалозовано при помощи паттерна "Стратегия"
     public abstract class Vehicle
     {
-        public string vehicleType { get; set; }
+        public string vehicleType;
 
-        public float speed { get; set; }
+        public float speed;
 
-        private int _fuelCapacity;
-        public int fuelCapacity
+        private float _fuelCapacity;
+        public float fuelCapacity
         {
             get { return _fuelCapacity; }
-            set { _fuelCapacity = FuelCut(value); }
+            // Если объем бака изменяется на значение, меньше текущего запаса топлива, то запас топлива обрезается до значения объема бака.
+            set { _fuelCapacity =  value < 0 ? 0 : ValueCut(value, ref _currentFuel); }
         }
 
-        public abstract float avgFuelConsump { get; set; }
+        private protected float _avgFuelConsump;
+        public float avgFuelConsump
+        {
+            get { return AffectedFuelConsump(); } // Возвращается значение, подверженное внешним факторам, которые могут влиять на запас хода.
+            set { _avgFuelConsump = value; }
+        }
 
         private float _currentFuel;
         public float currentFuel
@@ -38,18 +44,31 @@ namespace VehicleLib
             Max
         }
 
-        public Vehicle(int fuelCapacity, float avgFuelConsump)
+        public Vehicle(int fuelCapacity, float avgFuelConsump) // Родительский конструктор, который наследуют дочерние классы.
         {
             this.fuelCapacity = fuelCapacity;
             this.avgFuelConsump = avgFuelConsump;
         }
 
-        // Если объем бака изменяется на значение, меньше текущего запаса топлива, то запас топлива обрезается до значения объема бака.
-        private int FuelCut(int value)
+        // Если запас хода должен изменяться в зависимости от каких-либо внешних факторов, то нужно переопределить этот метод.
+        private protected virtual float AffectedFuelConsump()
         {
-            if (value < currentFuel)
+            return _avgFuelConsump;
+        }
+
+        private protected float ValueCut(float value, ref float cut)
+        {
+            if (value < cut)
             {
-                currentFuel = Math.Clamp(currentFuel, 0, value);
+                cut = Math.Clamp(cut, 0, value);
+            }
+            return value;
+        }
+        private protected int ValueCut(int value, ref int cut)
+        {
+            if (value < cut)
+            {
+                cut = Math.Clamp(cut, 0, value);
             }
             return value;
         }
@@ -61,9 +80,12 @@ namespace VehicleLib
 
         public void Info()
         {
+            Console.WriteLine($"This is {vehicleType}");
             Console.WriteLine($"Power reserve: {DistanceByFuel(FuelType.Current)} kilometers");
         }
 
+        // В задании написано, что метод должен принимать также и количество топлива. Но зачем?
+        // Топливо и расстояние - взаимозаменяемые параметры, поэтому достаточно указать сколько конкретно нужно проехать, и используя скорость, вычислить время.
         public float TimeByDistance(float distance, Time time)
         {
             switch (time)
@@ -82,26 +104,18 @@ namespace VehicleLib
 
     public class PassangerCar : Vehicle
     {
-        private float _avgFuelConsump;
-        public override float avgFuelConsump
-        {
-            // Геттер возвращает уже подверженное "штрафу" от кол-ва пассажиров значение
-            get { return AffectedFuelConsump(); }
-            set { _avgFuelConsump = value; }
-        }
-
         private int _passangerCapacity;
         public int passangerCapacity
         {
             get { return _passangerCapacity; }
-            set { _passangerCapacity = PassangersCut(value); }
+            set { _passangerCapacity = value < 0 ? 0 : ValueCut(value, ref _currentPasangers); }
         }
 
         private int _currentPasangers;
         public int currentPasangers
         {
             get { return _currentPasangers; }
-            set { _currentPasangers = Math.Clamp(value, 0, _passangerCapacity); }
+            set { _currentPasangers = Math.Clamp(value, 0, passangerCapacity); }
         }
 
         public PassangerCar(int fuelCapacity, float avgFuelConsump, int passangerCapacity) : base(fuelCapacity, avgFuelConsump)
@@ -110,21 +124,57 @@ namespace VehicleLib
             this.passangerCapacity = passangerCapacity;
         }
 
-        private int PassangersCut(int value)
-        {
-            if (value < currentPasangers)
-            {
-                currentPasangers = Math.Clamp(currentPasangers, 0, value);
-            }
-            return value;
-        }
-
         // Расход топлива рассчитывается с учетом текущего кол-ва пассажиров.
         // Количество пассажиров влияет на расход топлива, что в свою очередь влияет на запас хода.
-        private float AffectedFuelConsump()
+        private protected override float AffectedFuelConsump()
         {
             float percentage = 1 + (currentPasangers * 0.06f);
             return _avgFuelConsump * percentage;
         }
     }
+
+    public class CargoCar : Vehicle
+    {
+        private int _loadCapacity;
+        public int loadCapacity
+        {
+            get { return _loadCapacity; }
+            set { _loadCapacity = value < 0 ? 0 : ValueCut(value, ref _currentLoad); }
+        }
+
+        private int _currentLoad;
+        public int currentLoad
+        {
+            get { return _currentLoad; }
+            set { FullLoad(value); }
+        }
+        public CargoCar(int fuelCapacity, float avgFuelConsump, int loadCapacity) : base(fuelCapacity, avgFuelConsump)
+        {
+            vehicleType = "CargoCar";
+            this.loadCapacity = loadCapacity;
+        }
+
+        // Не совсем понятно что означает "Дополните класс проверкой может ли автомобиль принять полный груз на борт",
+        // Поэтому добавил простую проверку на превышение грузоподъемности.
+        private void FullLoad(int value)
+        {
+            if (value > loadCapacity)
+            {
+                throw new Exception("Cannot load so much cargo");
+            }
+            else
+            {
+                _currentLoad = value;
+            }
+            
+        }
+
+        private protected override float AffectedFuelConsump()
+        {
+            float percentage = 1 + ((currentLoad/200) * 0.04f);
+            return _avgFuelConsump * percentage;
+        }
+    }
+    // В задании был упомянут класс спортивного автомобиля, но никаких спецификаций предоставлено не было,
+    // Посчитал что задание недоработано.
 }
