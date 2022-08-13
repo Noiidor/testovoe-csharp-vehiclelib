@@ -28,7 +28,7 @@ namespace VehicleLib
         public float currentFuel
         {
             get { return _currentFuel; }
-            set { _currentFuel = Math.Clamp(value, 0, fuelCapacity); }
+            set { _currentFuel = Math.Clamp(value, 0, fuelCapacity); } // Текущее топливо не может быть меньше нуля или больше объема бака.
         }
         
         public enum Time
@@ -73,6 +73,7 @@ namespace VehicleLib
             return value;
         }
 
+        // Выбор между максимальным и текущим топливом можно было сделать через простой bool, но по-моему визуально лучше воспринимается enum
         public float DistanceByFuel(FuelType type)
         {
             return ((type == FuelType.Current) ? currentFuel : fuelCapacity) / avgFuelConsump * 100;
@@ -84,18 +85,23 @@ namespace VehicleLib
             Console.WriteLine($"Power reserve: {DistanceByFuel(FuelType.Current)} kilometers");
         }
 
-        // В задании написано, что метод должен принимать также и количество топлива. Но зачем?
-        // Топливо и расстояние - взаимозаменяемые параметры, поэтому достаточно указать сколько конкретно нужно проехать, и используя скорость, вычислить время.
+        // Если автомобилю не хватит топлива, что бы проехать заданное расстояние(или скорость нулевая), то возвращается 0.
         public float TimeByDistance(float distance, Time time)
         {
+            float maxDistance = DistanceByFuel(FuelType.Current);
+            if (distance > maxDistance)
+            {
+                return 0;
+            }
+            float travelTime = speed > 0 ? distance / speed : 0;
             switch (time)
             {
                 case Time.Hours:
-                    return distance / speed;
+                    return travelTime;
                 case Time.Minutes:
-                    return (distance / speed) * 60;
+                    return travelTime * 60;
                 case Time.Seconds:
-                    return (distance / speed) * 3600;
+                    return travelTime * 3600;
                 default:
                     throw new Exception("Invalid time argument");
             }
@@ -176,5 +182,5 @@ namespace VehicleLib
         }
     }
     // В задании был упомянут класс спортивного автомобиля, но никаких спецификаций предоставлено не было,
-    // Посчитал что задание недоработано.
+    // Видимо задание недоработано.
 }

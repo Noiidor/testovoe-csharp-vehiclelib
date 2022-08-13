@@ -33,5 +33,19 @@ namespace VehicleLib.Tests
             car.currentFuel = currentFuel;
             return MathF.Round(car.DistanceByFuel(Vehicle.FuelType.Current));
         }
+
+        [Test]
+        [TestCase(50, 10, 0, 50, 300, ExpectedResult = 225)]
+        [TestCase(50, 10, 0, 20, 300, ExpectedResult = 0)]
+        [TestCase(57, 12, 0, 100, 100, ExpectedResult = 75)]
+        [TestCase(52, 10, 0, 10, 40, ExpectedResult = 30)]
+        [TestCase(35, 10, 0, 0, 400, ExpectedResult = 0)]
+        public float TimeByDistanceTest(int fuelCapacity, float avgFuelConsump, int passangerCapacity, float currentFuel, float distance)
+        {
+            PassangerCar car = new PassangerCar(fuelCapacity, avgFuelConsump, passangerCapacity);
+            car.currentFuel = currentFuel;
+            car.speed = 80;
+            return MathF.Round(car.TimeByDistance(distance, Vehicle.Time.Minutes));
+        }
     }
 }
