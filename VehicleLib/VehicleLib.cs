@@ -43,7 +43,9 @@ namespace VehicleLib
             Current,
             Max
         }
-
+        
+        /// <param name="fuelCapacity"><see cref="Vehicle"/> fuel capacity in liters.</param>
+        /// <param name="avgFuelConsump"><see cref="Vehicle"/> fuel consumption in liters per 100 km.</param>
         public Vehicle(int fuelCapacity, float avgFuelConsump) // Родительский конструктор, который наследуют дочерние классы.
         {
             this.fuelCapacity = fuelCapacity;
@@ -56,6 +58,7 @@ namespace VehicleLib
             return _avgFuelConsump;
         }
 
+        // Метод, используемый для "обрезания" значения текущего "чего-либо", если Capacity изменяется на меньшее значение.
         private protected float ValueCut(float value, ref float cut)
         {
             if (value < cut)
@@ -73,19 +76,38 @@ namespace VehicleLib
             return value;
         }
 
+        // Метод для вычисления расстояния, которое ТС сможет проехать на полном/оставшемся запасе топлива.
         // Выбор между максимальным и текущим топливом можно было сделать через простой bool, но по-моему визуально лучше воспринимается enum
+
+        /// <summary>
+        /// Calculates the distance that <see cref="Vehicle"/> will travel on current/maximum fuel.
+        /// </summary>
+        /// <param name="type">Use maximum or current fuel for calculation</param>
+        /// <returns></returns>
         public float DistanceByFuel(FuelType type)
         {
             return ((type == FuelType.Current) ? currentFuel : fuelCapacity) / avgFuelConsump * 100;
         }
 
+        // Метод для отображения информации о запасе хода и типе ТС.
+        /// <summary>
+        /// Displays information about <see cref="Vehicle"/> power reserve and <see cref="vehicleType"/>.
+        /// </summary>
         public void Info()
         {
             Console.WriteLine($"This is {vehicleType}");
             Console.WriteLine($"Power reserve: {DistanceByFuel(FuelType.Current)} kilometers");
         }
 
+        // Метод для вычисления количества времени, требуемого что бы проехать заданное расстояние.
         // Если автомобилю не хватит топлива, что бы проехать заданное расстояние(или скорость нулевая), то возвращается 0.
+
+        /// <summary>
+        /// Calculates how much time need to travel to given distance.
+        /// </summary>
+        /// <param name="distance">Distance in kilometers.</param>
+        /// <param name="time">Calculate time in seconds, minutes or hours.</param>
+        /// <returns></returns>
         public float TimeByDistance(float distance, Time time)
         {
             float maxDistance = DistanceByFuel(FuelType.Current);
@@ -124,13 +146,15 @@ namespace VehicleLib
             set { _currentPasangers = Math.Clamp(value, 0, passangerCapacity); }
         }
 
+        
+        /// <inheritdoc cref="Vehicle.Vehicle(int, float)"/>
         public PassangerCar(int fuelCapacity, float avgFuelConsump, int passangerCapacity) : base(fuelCapacity, avgFuelConsump)
         {
             vehicleType = "PassangerCar";
             this.passangerCapacity = passangerCapacity;
         }
 
-        // Расход топлива рассчитывается с учетом текущего кол-ва пассажиров.
+        // Каждый пассажир уменьшает запас хода на 6%.
         // Количество пассажиров влияет на расход топлива, что в свою очередь влияет на запас хода.
         private protected override float AffectedFuelConsump()
         {
@@ -154,13 +178,16 @@ namespace VehicleLib
             get { return _currentLoad; }
             set { FullLoad(value); }
         }
+
+        /// <inheritdoc cref="Vehicle.Vehicle(int, float)"/>
+        /// <param name="loadCapacity">How much cargo in kilograms <see cref="Vehicle"/> can carry.</param>
         public CargoCar(int fuelCapacity, float avgFuelConsump, int loadCapacity) : base(fuelCapacity, avgFuelConsump)
         {
             vehicleType = "CargoCar";
             this.loadCapacity = loadCapacity;
         }
 
-        // Не совсем понятно что означает "Дополните класс проверкой может ли автомобиль принять полный груз на борт",
+        // Не совсем понятно что означает "полный груз" в просьбе "Дополните класс проверкой может ли автомобиль принять полный груз на борт",
         // Поэтому добавил простую проверку на превышение грузоподъемности.
         private void FullLoad(int value)
         {
@@ -175,6 +202,7 @@ namespace VehicleLib
             
         }
 
+        // Каждые 200 кг груза уменьшают запас хода на 4%.
         private protected override float AffectedFuelConsump()
         {
             float percentage = 1 + ((currentLoad/200) * 0.04f);
@@ -183,4 +211,5 @@ namespace VehicleLib
     }
     // В задании был упомянут класс спортивного автомобиля, но никаких спецификаций предоставлено не было,
     // Видимо задание недоработано.
+
 }
